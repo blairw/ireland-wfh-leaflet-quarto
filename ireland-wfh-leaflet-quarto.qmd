@@ -1,0 +1,75 @@
+---
+title: "Ireland WFH Leaflet Quarto"
+author: "Blair Wang"
+format:
+  html:
+    page-layout: full
+    theme: cerulean
+    toc: true
+    code-fold: true
+    embed-resources: true
+---
+
+## Where to get files?
+
+-   Electoral divisions: https://data.gov.ie/dataset/cso-electoral-divisions-national-statistical-boundaries-2022-ungeneralised
+-   Population aged 15 years and over by working from home: https://data.cso.ie/table/SAP2022T11T4ED
+    -   Full download --\> CSV
+
+## MacOS
+
+``` bash
+brew install gcc udunits gdal proj jq
+brew reinstall gcc udunits gdal proj jq # to force the latest version as per https://stackoverflow.com/a/76096699
+```
+
+``` r
+install.packages("sf", type = "source", configure.args = c("--with-sqlite3-lib=/opt/homebrew/opt/sqlite/lib", "--with-proj-lib=/opt/homebrew/opt/proj/lib")
+```
+
+## Let's go!
+
+```{r}
+#| fig-height: 10
+
+# Adapted from https://rstudio.github.io/leaflet/articles/choropleths.html
+
+library(geojsonio)
+my_map_data <- geojsonio::geojson_read("../files-generated/boundaries_simplified_dTolerance100_DATA_INFUSED.geojson", what = "sp")
+
+library(leaflet)
+bins <- c(10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, Inf)
+pal <- colorBin("YlOrRd", domain = states$density, bins = bins)
+
+library(magrittr)
+labels <- sprintf(
+  "<strong>%s</strong><br /><b>%g</b> percent of people working from home<br />(%g WFH, %g total working)",
+  my_map_data$ED_ENGLISH,
+  my_map_data$wfh_yes_percent,
+  my_map_data$wfh_yes,
+  my_map_data$all_working
+) %>% lapply(htmltools::HTML)
+
+leaflet(my_map_data) %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  setView(lng = -7.5, lat = 53.5, zoom = 7) %>%
+  addPolygons(
+    fillColor = ~pal(wfh_yes_percent),
+    weight = 1,
+    opacity = 1,
+    color = "white",
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlightOptions = highlightOptions(
+      weight = 5,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"))
+
+```
