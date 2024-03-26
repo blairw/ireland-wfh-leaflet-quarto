@@ -32,7 +32,7 @@ df_pivoted <- tidyr::spread(wfh_data, key=wfh_category, value=num_people)
 df_pivoted <- df_pivoted %>% mutate(wfh_yes_percent = 100 * wfh_yes / all_working)
 
 # Preview!
-head(pivoted)
+head(df_pivoted)
 
 cso_electorates_boundaries <- geojson_sf("../files-generated/boundaries_simplified_dTolerance100.geojson")
 inner_join(cso_electorates_boundaries, df_pivoted, by = 'ED_GUID') -> MapData
